@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import ScrollAction from '@/components/ScrollAction';
 import AcademicAdvisorChatbot from '@/components/AcademicAdvisorChatbot';
+import FloatingBackgroundElements from '@/components/FloatingBackgroundElements';
 
 export const metadata: Metadata = {
   title: 'EdNxt Academy | Build Strong Foundations. Prepare for Tomorrow.',
@@ -29,8 +30,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className="min-h-screen flex flex-col bg-edbg text-navy antialiased selection:bg-brand-lime selection:text-navy">
-        {children}
+      <body className="min-h-screen flex flex-col bg-edbg text-navy antialiased selection:bg-brand-lime selection:text-navy relative">
+        <FloatingBackgroundElements />
+        <div className="relative z-10 flex flex-col min-h-screen">
+          {children}
+        </div>
         <ScrollAction />
         <AcademicAdvisorChatbot />
       </body>
