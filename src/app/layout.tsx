@@ -3,6 +3,7 @@ import './globals.css';
 import ScrollAction from '@/components/ScrollAction';
 import AcademicAdvisorChatbot from '@/components/AcademicAdvisorChatbot';
 import FloatingBackgroundElements from '@/components/FloatingBackgroundElements';
+import ScrollAnimations from '@/components/ScrollAnimations';
 
 export const metadata: Metadata = {
   title: 'EdNxt Academy | Build Strong Foundations. Prepare for Tomorrow.',
@@ -37,6 +38,7 @@ export default function RootLayout({
         </div>
         <ScrollAction />
         <AcademicAdvisorChatbot />
+        <ScrollAnimations />
       </body>
     </html>
   );
