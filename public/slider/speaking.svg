@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <radialGradient id="sp-bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#78350F"/>
+      <stop offset="60%" stop-color="#2D1105"/>
+      <stop offset="100%" stop-color="#0E0502"/>
+    </radialGradient>
+    <radialGradient id="sp-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FBBF24" stop-opacity="0.85"/>
+      <stop offset="50%" stop-color="#F59E0B" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#0E0502" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sp-ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="50%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Base Circle -->
+  <circle cx="250" cy="250" r="240" fill="url(#sp-bg)" stroke="url(#sp-ring)" stroke-width="6"/>
+
+  <!-- Acoustic Ripple Rings & Degree Radians -->
+  <g stroke="rgba(251,191,36,0.25)" stroke-width="1.2">
+    <circle cx="250" cy="250" r="226" fill="none" stroke-dasharray="3,6"/>
+    <circle cx="250" cy="250" r="200" fill="none"/>
+    <circle cx="250" cy="250" r="165" fill="none" stroke-dasharray="2,5"/>
+    <circle cx="250" cy="250" r="125" fill="none"/>
+  </g>
+
+  <!-- Concentric Acoustic Soundwaves Expanding -->
+  <g fill="none" stroke="#FBBF24" stroke-width="2.5" opacity="0.6">
+    <path d="M160 210 A110 110 0 0 0 160 290" stroke-linecap="round"/>
+    <path d="M130 190 A150 150 0 0 0 130 310" stroke-linecap="round" stroke-width="2"/>
+    <path d="M100 170 A190 190 0 0 0 100 330" stroke-linecap="round" stroke-width="1.5"/>
+
+    <path d="M340 210 A110 110 0 0 1 340 290" stroke-linecap="round"/>
+    <path d="M370 190 A150 150 0 0 1 370 310" stroke-linecap="round" stroke-width="2"/>
+    <path d="M400 170 A190 190 0 0 1 400 330" stroke-linecap="round" stroke-width="1.5"/>
+  </g>
+
+  <!-- Golden Laurel Wreath (Victory of Rhetoric) -->
+  <g fill="#FDE68A" opacity="0.8">
+    <!-- Left Wreath Leaves -->
+    <path d="M175 140 Q160 150 170 165 Q185 155 175 140 Z"/>
+    <path d="M150 180 Q135 190 145 205 Q160 195 150 180 Z"/>
+    <path d="M140 230 Q125 240 135 255 Q150 245 140 230 Z"/>
+    <path d="M145 280 Q130 290 140 305 Q155 295 145 280 Z"/>
+    <path d="M170 330 Q155 340 165 355 Q180 345 170 330 Z"/>
+
+    <!-- Right Wreath Leaves -->
+    <path d="M325 140 Q340 150 330 165 Q315 155 325 140 Z"/>
+    <path d="M350 180 Q365 190 355 205 Q340 195 350 180 Z"/>
+    <path d="M360 230 Q375 240 365 255 Q350 245 360 230 Z"/>
+    <path d="M355 280 Q370 290 360 305 Q345 295 355 280 Z"/>
+    <path d="M330 330 Q345 340 335 355 Q320 345 330 330 Z"/>
+  </g>
+
+  <!-- Center Glow -->
+  <circle cx="250" cy="250" r="75" fill="url(#sp-glow)"/>
+
+  <!-- Vintage Studio Ribbon Microphone Emblem -->
+  <g transform="translate(210, 165)" stroke="#FFFFFF" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Mic Body Capsule -->
+    <rect x="25" y="15" width="30" height="60" rx="15" fill="#1C1917" stroke="#FDE68A" stroke-width="3"/>
+    <!-- Mic Grille lines -->
+    <line x1="28" y1="30" x2="52" y2="30" stroke="#F59E0B" stroke-width="1.5"/>
+    <line x1="28" y1="40" x2="52" y2="40" stroke="#F59E0B" stroke-width="1.5"/>
+    <line x1="28" y1="50" x2="52" y2="50" stroke="#F59E0B" stroke-width="1.5"/>
+    <line x1="28" y1="60" x2="52" y2="60" stroke="#F59E0B" stroke-width="1.5"/>
+    
+    <!-- Outer U-Mount Holder -->
+    <path d="M16 45 C16 75 64 75 64 45" stroke="#FFFFFF" stroke-width="3.5"/>
+    <line x1="40" y1="75" x2="40" y2="105" stroke="#FFFFFF" stroke-width="4"/>
+    <path d="M22 105 L58 105" stroke="#FDE68A" stroke-width="4.5"/>
+  </g>
+
+  <!-- Bottom Speaking Badge -->
+  <rect x="165" y="385" width="170" height="36" rx="18" fill="rgba(14,5,2,0.85)" stroke="#F59E0B" stroke-width="1.5"/>
+  <text x="250" y="408" fill="#FFFFFF" font-family="system-ui, sans-serif" font-size="13" font-weight="800" text-anchor="middle" letter-spacing="2">VOCAL RHETORIC</text>
+</svg>

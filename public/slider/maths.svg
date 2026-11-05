@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <radialGradient id="ma-bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1E3A8A"/>
+      <stop offset="60%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#030712"/>
+    </radialGradient>
+    <radialGradient id="ma-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.7"/>
+      <stop offset="60%" stop-color="#2563EB" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#030712" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ma-ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="50%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#818CF8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Base Circle -->
+  <circle cx="250" cy="250" r="240" fill="url(#ma-bg)" stroke="url(#ma-ring)" stroke-width="6"/>
+
+  <!-- Geometric Grid & Axis -->
+  <g stroke="rgba(255,255,255,0.15)" stroke-width="1">
+    <circle cx="250" cy="250" r="226" fill="none" stroke-dasharray="3,5"/>
+    <circle cx="250" cy="250" r="190" fill="none"/>
+    <circle cx="250" cy="250" r="130" fill="none"/>
+    <circle cx="250" cy="250" r="70" fill="none"/>
+    <!-- Cartesian crosshair -->
+    <line x1="250" y1="20" x2="250" y2="480" stroke-width="1.5" stroke="rgba(255,255,255,0.3)"/>
+    <line x1="20" y1="250" x2="480" y2="250" stroke-width="1.5" stroke="rgba(255,255,255,0.3)"/>
+    <line x1="87" y1="87" x2="413" y2="413"/>
+    <line x1="87" y1="413" x2="413" y2="87"/>
+  </g>
+
+  <!-- Golden Ratio Polyhedra / Sacred Geometry Nesting -->
+  <polygon points="250,75 395,159 395,327 250,411 105,327 105,159" fill="none" stroke="#60A5FA" stroke-width="2" opacity="0.6"/>
+  <polygon points="250,110 365,177 365,309 250,376 135,309 135,177" fill="none" stroke="#FBBF24" stroke-width="1.5" opacity="0.75" transform="rotate(30 250 250)"/>
+
+  <!-- Golden Ratio Spiral Arc -->
+  <path d="M250 250 A10 10 0 0 1 260 250 A20 20 0 0 1 240 250 A40 40 0 0 1 280 250 A80 80 0 0 1 200 250 A140 140 0 0 1 340 250" 
+        fill="none" stroke="#38BDF8" stroke-width="3" stroke-linecap="round" opacity="0.85"/>
+
+  <!-- Center Core Glow -->
+  <circle cx="250" cy="250" r="60" fill="url(#ma-glow)"/>
+
+  <!-- Compass & Caliper Symbol -->
+  <g transform="translate(195, 175) scale(1.1)" stroke="#FFFFFF" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="50" cy="20" r="8" fill="#FBBF24" stroke="#FFFFFF" stroke-width="2"/>
+    <line x1="50" y1="28" x2="20" y2="95"/>
+    <line x1="50" y1="28" x2="80" y2="95"/>
+    <!-- Cross Arc -->
+    <path d="M28 65 Q50 75 72 65" stroke="#38BDF8" stroke-width="2.5"/>
+    <circle cx="50" cy="70" r="3" fill="#60A5FA"/>
+  </g>
+
+  <!-- Math Symbols -->
+  <text x="140" y="140" fill="#38BDF8" font-family="serif" font-size="28" font-style="italic" opacity="0.7">π</text>
+  <text x="345" y="145" fill="#FBBF24" font-family="serif" font-size="26" opacity="0.75">∑</text>
+  <text x="135" y="360" fill="#60A5FA" font-family="serif" font-size="26" opacity="0.7">∫</text>
+  <text x="345" y="360" fill="#B4E94E" font-family="sans-serif" font-size="24" font-weight="bold" opacity="0.75">√x</text>
+
+  <!-- Bottom Math Badge -->
+  <rect x="165" y="385" width="170" height="36" rx="18" fill="rgba(3,7,18,0.85)" stroke="#60A5FA" stroke-width="1.5"/>
+  <text x="250" y="408" fill="#FFFFFF" font-family="system-ui, sans-serif" font-size="13" font-weight="800" text-anchor="middle" letter-spacing="2">LOGIC & RIGOUR</text>
+</svg>

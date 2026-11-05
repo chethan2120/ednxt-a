@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <defs>
+    <filter id="sci-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Floating Orbit & Atoms for Science -->
+  <g fill="none" stroke="#B4E94E" stroke-width="2.5" opacity="0.8" filter="url(#sci-glow)">
+    <ellipse cx="120" cy="120" rx="90" ry="35" transform="rotate(-35 120 120)"/>
+    <ellipse cx="120" cy="120" rx="90" ry="35" transform="rotate(35 120 120)" stroke="#38BDF8"/>
+  </g>
+  <circle cx="180" cy="80" r="8" fill="#B4E94E"/>
+  <circle cx="60" cy="160" r="7" fill="#38BDF8"/>
+  <circle cx="120" cy="120" r="12" fill="#F43F5E"/>
+  <!-- Sparkles -->
+  <path d="M70 60 L73 72 L85 75 L73 78 L70 90 L67 78 L55 75 L67 72 Z" fill="#B4E94E"/>
+  <path d="M170 160 L172 168 L180 170 L172 172 L170 180 L168 172 L160 170 L168 168 Z" fill="#38BDF8"/>
+</svg>

@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <radialGradient id="sc-bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1E4976"/>
+      <stop offset="60%" stop-color="#0E2849"/>
+      <stop offset="100%" stop-color="#061527"/>
+    </radialGradient>
+    <radialGradient id="sc-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#B4E94E" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#38BDF8" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#061527" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sc-ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B4E94E"/>
+      <stop offset="50%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Circle Base -->
+  <circle cx="250" cy="250" r="240" fill="url(#sc-bg)" stroke="url(#sc-ring)" stroke-width="6"/>
+
+  <!-- Compass ticks and markings -->
+  <g stroke="rgba(255,255,255,0.25)" stroke-width="1.5">
+    <circle cx="250" cy="250" r="226" fill="none" stroke-dasharray="2,6"/>
+    <circle cx="250" cy="250" r="216" fill="none" stroke-width="0.8"/>
+    <line x1="250" y1="16" x2="250" y2="34"/>
+    <line x1="250" y1="466" x2="250" y2="484"/>
+    <line x1="16" y1="250" x2="34" y2="250"/>
+    <line x1="466" y1="250" x2="484" y2="250"/>
+  </g>
+
+  <!-- Constellation Stars -->
+  <g fill="#FFFFFF" opacity="0.6">
+    <circle cx="120" cy="140" r="2"/>
+    <circle cx="160" cy="110" r="3"/>
+    <circle cx="360" cy="130" r="2.5"/>
+    <circle cx="390" cy="170" r="1.5"/>
+    <circle cx="110" cy="360" r="2"/>
+    <circle cx="380" cy="340" r="3"/>
+    <circle cx="340" cy="390" r="2"/>
+  </g>
+
+  <!-- Orbital Rings (Atom & Planetary) -->
+  <g fill="none" stroke-width="2.5">
+    <ellipse cx="250" cy="250" rx="170" ry="60" stroke="#38BDF8" opacity="0.75" transform="rotate(30 250 250)"/>
+    <ellipse cx="250" cy="250" rx="170" ry="60" stroke="#B4E94E" opacity="0.75" transform="rotate(-30 250 250)"/>
+    <ellipse cx="250" cy="250" rx="170" ry="60" stroke="#60A5FA" opacity="0.6" transform="rotate(90 250 250)"/>
+  </g>
+
+  <!-- Orbiting Electrons -->
+  <circle cx="390" cy="170" r="7" fill="#B4E94E" filter="drop-shadow(0 0 6px #B4E94E)"/>
+  <circle cx="110" cy="330" r="7" fill="#38BDF8" filter="drop-shadow(0 0 6px #38BDF8)"/>
+  <circle cx="250" cy="80" r="6" fill="#F43F5E" filter="drop-shadow(0 0 6px #F43F5E)"/>
+
+  <!-- Center Core Glow -->
+  <circle cx="250" cy="250" r="85" fill="url(#sc-glow)"/>
+
+  <!-- Central Scientific Apparatus / Microscope & Flask Emblem -->
+  <g transform="translate(190, 180) scale(1.2)" stroke="#FFFFFF" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Stylized Flask -->
+    <path d="M40 10 L60 10 M50 10 L50 35 L20 85 C15 95 24 100 35 100 L65 100 C76 100 85 95 80 85 L50 35" stroke="#FFFFFF" fill="rgba(56,189,248,0.2)"/>
+    <!-- Liquid & Bubbles -->
+    <path d="M26 75 Q50 82 74 75 L78 88 C77 96 70 98 60 98 L40 98 C30 98 23 96 22 88 Z" fill="#B4E94E" opacity="0.85" stroke="none"/>
+    <circle cx="42" cy="62" r="3.5" fill="#FFFFFF" stroke="none"/>
+    <circle cx="56" cy="52" r="2.5" fill="#FFFFFF" stroke="none"/>
+    <circle cx="50" cy="70" r="2" fill="#FFFFFF" stroke="none"/>
+  </g>
+
+  <!-- Bottom Science Badge Label -->
+  <rect x="170" y="385" width="160" height="36" rx="18" fill="rgba(6,21,39,0.85)" stroke="#38BDF8" stroke-width="1.5"/>
+  <text x="250" y="408" fill="#FFFFFF" font-family="system-ui, sans-serif" font-size="13" font-weight="800" text-anchor="middle" letter-spacing="2">EMPIRICAL LABS</text>
+</svg>

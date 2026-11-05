@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" width="280" height="64" fill="none">
+  <!-- EdNxt Logo - Dark Background Variation -->
+  <g transform="translate(4, 8)">
+    <path d="M6 38 L24 24 L34 32 L16 46 Z" fill="#60A5FA" />
+    <path d="M18 24 L34 10 L44 18 L28 32 Z" fill="#93C5FD" />
+    <path d="M30 11 L42 2 L50 8 L38 18 Z" fill="#B4E94E" />
+    <circle cx="45" cy="5" r="3.5" fill="#B4E94E" />
+  </g>
+  <text x="68" y="42" font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif" font-size="34" font-weight="900" letter-spacing="-0.03em" fill="#FFFFFF">
+    ED<tspan fill="#60A5FA">NXT</tspan>
+  </text>
+  <text x="70" y="54" font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif" font-size="8.5" font-weight="700" letter-spacing="0.22em" fill="#94A3B8">
+    GRADES 6–8
+  </text>
+</svg>

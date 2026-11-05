@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <defs>
+    <filter id="mat-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Floating Golden Spiral & Math Geometry -->
+  <g fill="none" stroke="#60A5FA" stroke-width="2.5" opacity="0.85" filter="url(#mat-glow)">
+    <polygon points="120,40 190,80 190,160 120,200 50,160 50,80"/>
+    <polygon points="120,60 170,90 170,150 120,180 70,150 70,90" stroke="#FBBF24" stroke-width="1.8" transform="rotate(30 120 120)"/>
+  </g>
+  <text x="60" y="70" fill="#38BDF8" font-family="serif" font-size="28" font-style="italic">π</text>
+  <text x="170" y="190" fill="#FBBF24" font-family="serif" font-size="26">∑</text>
+  <path d="M160 60 L163 70 L173 73 L163 76 L160 86 L157 76 L147 73 L157 70 Z" fill="#60A5FA"/>
+</svg>
