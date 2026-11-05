@@ -62,6 +62,30 @@ body {
   box-shadow: 0 20px 35px -8px rgba(16, 43, 80, 0.12), 0 8px 16px -4px rgba(16, 43, 80, 0.05);
 }
 
+/* Ultra-smooth hardware-accelerated scroll reveal transitions */
+.scroll-reveal {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroll-reveal.is-revealed {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.scroll-stagger-item {
+  opacity: 0;
+  transform: translate3d(0, 20px, 0);
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--stagger-idx, 0) * 60ms);
+}
+
+.scroll-stagger-item.is-revealed {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
 /* Subtle Animated Dot Background */
 .bg-ednxt-grid {
   background-image: radial-gradient(rgba(37, 99, 235, 0.08) 1px, transparent 1px);

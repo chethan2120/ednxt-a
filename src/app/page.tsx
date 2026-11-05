@@ -11,7 +11,7 @@ import ClosingCTA from '@/components/ClosingCTA';
 import Footer from '@/components/Footer';
 import { getAllSettings, getAllPackages } from '@/lib/db';
 
-export const revalidate = 0; // Dynamic server rendering so admin changes reflect immediately!
+export const revalidate = 60; // Cache at edge CDN for sub-50ms instant load; revalidates every 60s in background!
 
 export default function HomePage() {
   const settings = getAllSettings();

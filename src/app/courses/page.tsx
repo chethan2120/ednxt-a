@@ -11,7 +11,7 @@ export const metadata = {
   description: 'Explore all 4 learning streams: Science Mastery, Mathematics Problem Solving, AI for Students, and Public Speaking. CBSE and British KS3 aligned.',
 };
 
-export const revalidate = 0;
+export const revalidate = 60;
 
 export default function AllCoursesPage() {
   const courses = getAllCourses();

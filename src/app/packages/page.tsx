@@ -11,7 +11,7 @@ export const metadata = {
   description: 'Transparent middle school tuition bundles: Core Bundle (Science + Maths), Future-Skills Bundle (AI + Speech), and Full Bundle (All 4 Streams). AED 2,999/term.',
 };
 
-export const revalidate = 0;
+export const revalidate = 60;
 
 export default function PackagesPage() {
   const packages = getAllPackages();

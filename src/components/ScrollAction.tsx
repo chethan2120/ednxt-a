@@ -1,26 +1,35 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowUp, Sparkles, MessageSquare } from 'lucide-react';
+import { ArrowUp, Sparkles } from 'lucide-react';
 
 export default function ScrollAction() {
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const showScrollTopRef = useRef(false);
+  const tickingRef = useRef(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (totalHeight > 0) {
-        const currentProgress = (window.scrollY / totalHeight) * 100;
-        setScrollProgress(Math.min(100, Math.max(0, currentProgress)));
-      }
+      if (tickingRef.current) return;
+      tickingRef.current = true;
 
-      if (window.scrollY > 300) {
-        setShowScrollTop(true);
-      } else {
-        setShowScrollTop(false);
-      }
+      window.requestAnimationFrame(() => {
+        const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+        if (totalHeight > 0 && progressBarRef.current) {
+          const ratio = Math.min(1, Math.max(0, window.scrollY / totalHeight));
+          progressBarRef.current.style.transform = `scaleX(${ratio})`;
+        }
+
+        const isOver300 = window.scrollY > 300;
+        if (isOver300 !== showScrollTopRef.current) {
+          showScrollTopRef.current = isOver300;
+          setShowScrollTop(isOver300);
+        }
+
+        tickingRef.current = false;
+      });
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -38,14 +47,15 @@ export default function ScrollAction() {
 
   return (
     <>
-      {/* 1. Top Reading Scroll Progress Bar */}
+      {/* 1. Top Reading Scroll Progress Bar - High-performance GPU scaleX transform, 0 reflows */}
       <div
         className="fixed top-0 left-0 right-0 h-1 z-50 pointer-events-none bg-slate-200/20"
         style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50 }}
       >
         <div
-          className="h-full bg-gradient-to-r from-brand-blue via-brand-lime to-brand-blue transition-all duration-150 ease-out"
-          style={{ width: `${scrollProgress}%` }}
+          ref={progressBarRef}
+          className="h-full w-full bg-gradient-to-r from-brand-blue via-brand-lime to-brand-blue origin-left will-change-transform"
+          style={{ transform: 'scaleX(0)' }}
         />
       </div>
 
@@ -71,7 +81,7 @@ export default function ScrollAction() {
           </span>
         </Link>
 
-        {/* Back To Top Button with Scroll Percentage */}
+        {/* Back To Top Button */}
         <button
           type="button"
           onClick={scrollToTop}

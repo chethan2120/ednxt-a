@@ -30,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en">
       <body className="min-h-screen flex flex-col bg-edbg text-navy antialiased selection:bg-brand-lime selection:text-navy relative">
         <FloatingBackgroundElements />
         <div className="relative z-10 flex flex-col min-h-screen">

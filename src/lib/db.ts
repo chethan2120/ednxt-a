@@ -31,6 +31,7 @@ if (isVercel) {
 }
 
 let dbInstance: Database.Database | null = null;
+let isDbInitialized = false;
 
 export function hashPassword(password: string): string {
   const salt = 'ednxt_secure_salt_2026';
@@ -45,13 +46,26 @@ export function getDb(): Database.Database {
   dbInstance = new Database(DB_PATH);
   dbInstance.pragma('journal_mode = WAL');
 
-  // Initialize Tables
-  initTables(dbInstance);
+  // Initialize Tables only if not already done in this process
+  if (!isDbInitialized) {
+    initTables(dbInstance);
+    isDbInitialized = true;
+  }
 
   return dbInstance;
 }
 
 function initTables(db: Database.Database) {
+  // Fast check: if users table already exists, avoid running the heavy migration and seed loops
+  try {
+    const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get();
+    if (tableCheck) {
+      return;
+    }
+  } catch (e) {
+    // continue to full initialization
+  }
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
