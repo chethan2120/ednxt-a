@@ -12,7 +12,7 @@ export async function GET(
   }
 
   const id = parseInt(params.id, 10);
-  const enquiry = getEnquiryById(id);
+  const enquiry = await getEnquiryById(id);
   if (!enquiry) {
     return NextResponse.json({ error: 'Enquiry not found.' }, { status: 404 });
   }
@@ -38,8 +38,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid status value.' }, { status: 400 });
     }
 
-    updateEnquiryStatus(id, status, internal_notes);
-    logActivity(
+    await updateEnquiryStatus(id, status, internal_notes);
+    await logActivity(
       session.email,
       'UPDATE_ENQUIRY',
       'enquiry',
@@ -65,8 +65,8 @@ export async function DELETE(
 
   try {
     const id = parseInt(params.id, 10);
-    deleteEnquiry(id);
-    logActivity(session.email, 'DELETE_ENQUIRY', 'enquiry', String(id), `Deleted enquiry ID: ${id}`);
+    await deleteEnquiry(id);
+    await logActivity(session.email, 'DELETE_ENQUIRY', 'enquiry', String(id), `Deleted enquiry ID: ${id}`);
 
     return NextResponse.json({ success: true, message: 'Enquiry deleted successfully.' });
   } catch (err: any) {

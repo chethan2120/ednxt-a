@@ -1,7 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
 import { Check, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
-import { getAllPackages } from '@/lib/db';
 
 interface PackageItem {
   id: number;
@@ -17,22 +16,18 @@ interface PackageItem {
 }
 
 export default function PackagesSection({ initialPackages }: { initialPackages?: PackageItem[] }) {
-  // If not passed as props, we fetch from database
+  // If not passed as props, use fallback packages
   let packages: PackageItem[] = initialPackages || [];
   if (!packages || packages.length === 0) {
-    try {
-      packages = getAllPackages() as PackageItem[];
-    } catch (e) {
-      // Fallback
-      packages = [
-        {
-          id: 1,
-          slug: 'core-bundle',
-          name: 'Core Bundle',
-          subtitle: 'Academic Foundations in Science & Mathematics',
-          streams_included: JSON.stringify(['Science', 'Mathematics']),
-          price_aed: 2999,
-          billing_period: 'per term',
+    packages = [
+      {
+        id: 1,
+        slug: 'core-bundle',
+        name: 'Core Bundle',
+        subtitle: 'Academic Foundations in Science & Mathematics',
+        streams_included: JSON.stringify(['Science', 'Mathematics']),
+        price_aed: 2999,
+        billing_period: 'per term',
           features: JSON.stringify([
             'CBSE (NCERT) or British (KS3) alignment',
             '4 Live Sessions / Week (2 Science + 2 Maths)',
@@ -87,7 +82,6 @@ export default function PackagesSection({ initialPackages }: { initialPackages?:
         }
       ];
     }
-  }
 
   return (
     <section id="packages" className="py-20 bg-white">

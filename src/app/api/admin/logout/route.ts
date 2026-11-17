@@ -6,7 +6,7 @@ export async function POST() {
   try {
     const session = getCurrentSession();
     if (session) {
-      logActivity(session.email, 'LOGOUT', 'auth', '', 'Admin logged out');
+      await logActivity(session.email, 'LOGOUT', 'auth', '', 'Admin logged out');
     }
     clearSessionCookie();
     return NextResponse.json({ success: true, message: 'Logged out successfully.' });

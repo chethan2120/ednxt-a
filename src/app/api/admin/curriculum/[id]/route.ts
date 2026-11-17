@@ -14,9 +14,9 @@ export async function PUT(
   try {
     const id = decodeURIComponent(params.id);
     const data = await request.json();
-    updateCurriculumTopic(id, data);
+    await updateCurriculumTopic(id, data);
 
-    logActivity(session.email, 'UPDATE_CURRICULUM', 'curriculum', id, `Updated curriculum topic: ${id}`);
+    await logActivity(session.email, 'UPDATE_CURRICULUM', 'curriculum', id, `Updated curriculum topic: ${id}`);
     return NextResponse.json({ success: true, message: 'Curriculum updated successfully.' });
   } catch (err: any) {
     console.error('Curriculum update error:', err);

@@ -8,8 +8,8 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const settings = getAllSettings();
-  const packages = getAllPackages();
+  const settings = await getAllSettings();
+  const packages = await getAllPackages();
 
   return NextResponse.json({ settings, packages });
 }
@@ -24,18 +24,18 @@ export async function POST(request: Request) {
     const { settings, packages } = await request.json();
 
     if (settings && typeof settings === 'object') {
-      updateSettingsBatch(settings);
+      await updateSettingsBatch(settings);
     }
 
     if (packages && Array.isArray(packages)) {
       for (const pkg of packages) {
         if (pkg.id) {
-          updatePackage(pkg.id, pkg);
+          await updatePackage(pkg.id, pkg);
         }
       }
     }
 
-    logActivity(session.email, 'UPDATE_SETTINGS', 'settings', '', 'Updated website settings and pricing');
+    await logActivity(session.email, 'UPDATE_SETTINGS', 'settings', '', 'Updated website settings and pricing');
     return NextResponse.json({ success: true, message: 'Settings updated successfully.' });
   } catch (err: any) {
     console.error('Settings update error:', err);

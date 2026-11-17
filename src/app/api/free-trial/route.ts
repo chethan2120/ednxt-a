@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     }
 
     // Save to real database
-    const enquiryId = createEnquiry({
+    const enquiryId = await createEnquiry({
       type: 'free_trial',
       name: parent_name.trim(),
       email: email.trim().toLowerCase(),

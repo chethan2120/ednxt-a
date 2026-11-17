@@ -10,7 +10,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 });
     }
 
-    const user = verifyUserCredentials(email.trim().toLowerCase(), password);
+    const user = await verifyUserCredentials(email.trim().toLowerCase(), password);
 
     if (!user) {
       return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     });
 
     setSessionCookie(token);
-    logActivity(user.email, 'LOGIN', 'auth', String(user.id), 'Admin logged in successfully');
+    await logActivity(user.email, 'LOGIN', 'auth', String(user.id), 'Admin logged in successfully');
 
     return NextResponse.json({
       success: true,

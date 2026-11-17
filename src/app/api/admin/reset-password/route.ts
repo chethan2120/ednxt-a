@@ -15,15 +15,15 @@ export async function POST(request: Request) {
     }
 
     const session = getCurrentSession();
-    const targetUser = getUserByEmail(email.trim().toLowerCase());
+    const targetUser = await getUserByEmail(email.trim().toLowerCase());
 
     if (!targetUser) {
       return NextResponse.json({ error: 'User not found.' }, { status: 404 });
     }
 
     // Update password
-    updateUserPassword(targetUser.email, new_password);
-    logActivity(
+    await updateUserPassword(targetUser.email, new_password);
+    await logActivity(
       session ? session.email : targetUser.email,
       'PASSWORD_RESET',
       'user',

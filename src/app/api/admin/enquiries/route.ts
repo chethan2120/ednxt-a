@@ -13,6 +13,6 @@ export async function GET(request: Request) {
   const status = searchParams.get('status') || undefined;
   const search = searchParams.get('search') || undefined;
 
-  const enquiries = getAllEnquiries(type, status, search);
+  const enquiries = await getAllEnquiries(type, status, search);
   return NextResponse.json({ enquiries });
 }
