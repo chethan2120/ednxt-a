@@ -40,3 +40,6 @@ data/*.db-shm
 data/*.db-journal
 
 .vercel
+
+.env.local
+data/ednxt.db

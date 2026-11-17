@@ -14,9 +14,9 @@ export async function PUT(
   try {
     const id = parseInt(params.id, 10);
     const data = await request.json();
-    updateCourse(id, data);
+    await updateCourse(id, data);
 
-    logActivity(session.email, 'UPDATE_COURSE', 'course', String(id), `Updated course ID: ${id}`);
+    await logActivity(session.email, 'UPDATE_COURSE', 'course', String(id), `Updated course ID: ${id}`);
     return NextResponse.json({ success: true, message: 'Course updated successfully.' });
   } catch (err: any) {
     console.error('Course update error:', err);
@@ -35,8 +35,8 @@ export async function DELETE(
 
   try {
     const id = parseInt(params.id, 10);
-    deleteCourse(id);
-    logActivity(session.email, 'DELETE_COURSE', 'course', String(id), `Deleted course ID: ${id}`);
+    await deleteCourse(id);
+    await logActivity(session.email, 'DELETE_COURSE', 'course', String(id), `Deleted course ID: ${id}`);
     return NextResponse.json({ success: true, message: 'Course deleted successfully.' });
   } catch (err: any) {
     console.error('Course deletion error:', err);

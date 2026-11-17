@@ -13,8 +13,8 @@ export const metadata = {
 
 export const revalidate = 60;
 
-export default function AllCoursesPage() {
-  const courses = getAllCourses();
+export default async function AllCoursesPage() {
+  const courses = await getAllCourses();
 
   const streams = [
     {

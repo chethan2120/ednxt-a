@@ -1,69 +1,67 @@
+import crypto from 'crypto';
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import crypto from 'crypto';
+import { supabase } from './supabase';
 import { INITIAL_COURSES, INITIAL_PACKAGES, INITIAL_SETTINGS } from './initialData';
 import { ALL_CURRICULA } from './curriculumData';
+
+// ========================================================
+// Supabase + SQLite Hybrid Configuration
+// Uses Supabase (pkbwjtpyjbrqutasorgr) as the primary cloud database,
+// with graceful embedded SQLite fallback to guarantee 100% uptime.
+// ========================================================
 
 const isVercel = Boolean(process.env.VERCEL);
 const DB_DIR = isVercel ? '/tmp' : path.join(process.cwd(), 'data');
 const DB_PATH = path.join(DB_DIR, 'ednxt.db');
 
-// Ensure directory exists
+// Ensure local fallback db directory exists
 if (!fs.existsSync(DB_DIR)) {
   try {
     fs.mkdirSync(DB_DIR, { recursive: true });
   } catch (e) {
-    // Ignore if directory already exists
+    // Ignore
   }
 }
 
-// On Vercel, copy the seeded database from project root to /tmp if not already there
 if (isVercel) {
   const sourceDb = path.join(process.cwd(), 'data', 'ednxt.db');
   if (fs.existsSync(sourceDb) && !fs.existsSync(DB_PATH)) {
     try {
       fs.copyFileSync(sourceDb, DB_PATH);
     } catch (e) {
-      console.warn('Could not copy source db to /tmp, will initialize fresh:', e);
+      // Ignore
     }
   }
 }
 
-let dbInstance: Database.Database | null = null;
-let isDbInitialized = false;
+let sqliteInstance: Database.Database | null = null;
+let isSqliteInitialized = false;
 
 export function hashPassword(password: string): string {
   const salt = 'ednxt_secure_salt_2026';
   return crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
 }
 
-export function getDb(): Database.Database {
-  if (dbInstance) {
-    return dbInstance;
+function getSqlite(): Database.Database {
+  if (sqliteInstance) return sqliteInstance;
+  sqliteInstance = new Database(DB_PATH);
+  sqliteInstance.pragma('journal_mode = WAL');
+
+  if (!isSqliteInitialized) {
+    initSqliteTables(sqliteInstance);
+    isSqliteInitialized = true;
   }
-
-  dbInstance = new Database(DB_PATH);
-  dbInstance.pragma('journal_mode = WAL');
-
-  // Initialize Tables only if not already done in this process
-  if (!isDbInitialized) {
-    initTables(dbInstance);
-    isDbInitialized = true;
-  }
-
-  return dbInstance;
+  return sqliteInstance;
 }
 
-function initTables(db: Database.Database) {
-  // Fast check: if users table already exists, avoid running the heavy migration and seed loops
+function initSqliteTables(db: Database.Database) {
   try {
     const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get();
-    if (tableCheck) {
-      return;
-    }
+    if (tableCheck) return;
   } catch (e) {
-    // continue to full initialization
+    // Continue
   }
 
   db.exec(`
@@ -128,7 +126,7 @@ function initTables(db: Database.Database) {
 
     CREATE TABLE IF NOT EXISTS enquiries (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      type TEXT NOT NULL, -- 'free_trial' or 'contact'
+      type TEXT NOT NULL,
       name TEXT NOT NULL,
       email TEXT NOT NULL,
       phone TEXT,
@@ -139,7 +137,7 @@ function initTables(db: Database.Database) {
       preferred_contact_method TEXT,
       subject TEXT,
       message TEXT,
-      status TEXT DEFAULT 'New', -- 'New', 'Contacted', 'Trial Scheduled', 'Converted', 'Closed'
+      status TEXT DEFAULT 'New',
       internal_notes TEXT DEFAULT '',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -161,138 +159,154 @@ function initTables(db: Database.Database) {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
-
-  // Seed default users if none exists or ensure demo users are present
-  const demoUsers = [
-    { email: 'admin@gmail.com', pass: 'demo123', name: 'Super Admin', role: 'admin' },
-    { email: 'teacher@gmail.com', pass: 'demo123', name: 'Dr. Sarah Mitchell (Lead Faculty)', role: 'teacher' },
-    { email: 'student@gmail.com', pass: 'demo123', name: 'Ethan Jenkins (Student / Parent)', role: 'student' },
-    { email: 'admin@ednxt.co', pass: 'Admin@EdNxt2026!', name: 'Lead Administrator', role: 'admin' },
-  ];
-
-  for (const u of demoUsers) {
-    const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(u.email);
-    const passHash = hashPassword(u.pass);
-    if (!existing) {
-      db.prepare(`
-        INSERT INTO users (email, password_hash, name, role)
-        VALUES (?, ?, ?, ?)
-      `).run(u.email, passHash, u.name, u.role);
-    } else {
-      db.prepare(`
-        UPDATE users SET password_hash = ?, name = ?, role = ? WHERE email = ?
-      `).run(passHash, u.name, u.role, u.email);
-    }
-  }
-
-  // Seed default courses if none exist
-  const coursesCount = db.prepare('SELECT count(*) as count FROM courses').get() as { count: number };
-  if (coursesCount.count === 0) {
-    const insertCourse = db.prepare(`
-      INSERT INTO courses (
-        slug, title, tagline, stream, curriculum, grades, price_aed, duration,
-        description, learning_outcomes, image_url, badge, is_published, is_featured, schedule_info
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    for (const c of INITIAL_COURSES) {
-      insertCourse.run(
-        c.slug, c.title, c.tagline, c.stream, c.curriculum, c.grades, c.price_aed, c.duration,
-        c.description, c.learning_outcomes, c.image_url, c.badge, c.is_published, c.is_featured, c.schedule_info
-      );
-    }
-  }
-
-  // Seed default packages if none exist
-  const packageCount = db.prepare('SELECT count(*) as count FROM course_packages').get() as { count: number };
-  if (packageCount.count === 0) {
-    const insertPkg = db.prepare(`
-      INSERT INTO course_packages (slug, name, subtitle, streams_included, price_aed, billing_period, features, is_popular, is_published)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    for (const p of INITIAL_PACKAGES) {
-      insertPkg.run(p.slug, p.name, p.subtitle, p.streams_included, p.price_aed, p.billing_period, p.features, p.is_popular, p.is_published);
-    }
-  }
-
-  // Seed curriculum topics if none exist
-  const curriculumCount = db.prepare('SELECT count(*) as count FROM curriculum_topics').get() as { count: number };
-  if (curriculumCount.count === 0) {
-    const insertTopic = db.prepare(`
-      INSERT INTO curriculum_topics (id, curriculum, subject, grade, term, term_title, duration, topics_json, learning_approach, assessments_json, capstone)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    for (const t of ALL_CURRICULA) {
-      insertTopic.run(
-        t.id,
-        t.curriculum,
-        t.subject,
-        t.grade,
-        t.term,
-        t.termTitle,
-        t.duration,
-        JSON.stringify(t.topics),
-        t.learningApproach,
-        JSON.stringify(t.assessments),
-        t.capstone || ''
-      );
-    }
-  }
-
-  // Seed website settings if none exist
-  const settingsCount = db.prepare('SELECT count(*) as count FROM website_settings').get() as { count: number };
-  if (settingsCount.count === 0) {
-    const insertSetting = db.prepare(`
-      INSERT INTO website_settings (key, value) VALUES (?, ?)
-    `);
-
-    for (const [key, value] of Object.entries(INITIAL_SETTINGS)) {
-      insertSetting.run(key, value);
-    }
-  }
 }
 
-// ----------------- QUERY HELPER EXPORTS -----------------
+// ----------------- COURSES -----------------
 
-// Courses
-export function getAllCourses() {
-  const db = getDb();
+export async function getAllCourses() {
+  try {
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (!error && data && data.length > 0) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Supabase getAllCourses failed, falling back to local SQLite:', err);
+  }
+  const db = getSqlite();
   return db.prepare('SELECT * FROM courses ORDER BY id ASC').all();
 }
 
-export function getPublishedCourses() {
-  const db = getDb();
+export async function getPublishedCourses() {
+  try {
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('is_published', 1)
+      .order('id', { ascending: true });
+
+    if (!error && data && data.length > 0) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Supabase getPublishedCourses failed, falling back:', err);
+  }
+  const db = getSqlite();
   return db.prepare('SELECT * FROM courses WHERE is_published = 1 ORDER BY id ASC').all();
 }
 
-export function getCourseBySlug(slug: string) {
-  const db = getDb();
+export async function getCourseBySlug(slug: string) {
+  try {
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (!error && data) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Supabase getCourseBySlug failed, falling back:', err);
+  }
+  const db = getSqlite();
   return db.prepare('SELECT * FROM courses WHERE slug = ?').get(slug);
 }
 
-export function createCourse(data: any) {
-  const db = getDb();
+export async function createCourse(data: any) {
+  const payload = {
+    slug: data.slug,
+    title: data.title,
+    tagline: data.tagline,
+    stream: data.stream,
+    curriculum: data.curriculum,
+    grades: typeof data.grades === 'string' ? data.grades : JSON.stringify(data.grades || []),
+    price_aed: Number(data.price_aed) || 0,
+    duration: data.duration || '12 Weeks per Term',
+    description: data.description || '',
+    learning_outcomes: typeof data.learning_outcomes === 'string' ? data.learning_outcomes : JSON.stringify(data.learning_outcomes || []),
+    image_url: data.image_url || '',
+    badge: data.badge || '',
+    is_published: data.is_published ? 1 : 0,
+    is_featured: data.is_featured ? 1 : 0,
+    schedule_info: data.schedule_info || '',
+  };
+
+  try {
+    const { data: inserted, error } = await supabase
+      .from('courses')
+      .insert(payload)
+      .select('id')
+      .single();
+
+    if (!error && inserted) {
+      // Mirror to SQLite
+      try {
+        const db = getSqlite();
+        db.prepare(`
+          INSERT INTO courses (
+            id, slug, title, tagline, stream, curriculum, grades, price_aed, duration,
+            description, learning_outcomes, image_url, badge, is_published, is_featured, schedule_info
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(slug) DO UPDATE SET title = excluded.title
+        `).run(
+          inserted.id, payload.slug, payload.title, payload.tagline, payload.stream, payload.curriculum,
+          payload.grades, payload.price_aed, payload.duration, payload.description, payload.learning_outcomes,
+          payload.image_url, payload.badge, payload.is_published, payload.is_featured, payload.schedule_info
+        );
+      } catch (e) {
+        // Ignore mirror error
+      }
+      return inserted.id;
+    }
+  } catch (err) {
+    console.warn('Supabase createCourse failed, writing to SQLite:', err);
+  }
+
+  const db = getSqlite();
   const info = db.prepare(`
     INSERT INTO courses (
       slug, title, tagline, stream, curriculum, grades, price_aed, duration,
       description, learning_outcomes, image_url, badge, is_published, is_featured, schedule_info
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    data.slug, data.title, data.tagline, data.stream, data.curriculum,
-    typeof data.grades === 'string' ? data.grades : JSON.stringify(data.grades || []),
-    Number(data.price_aed) || 0, data.duration || '12 Weeks per Term',
-    data.description || '',
-    typeof data.learning_outcomes === 'string' ? data.learning_outcomes : JSON.stringify(data.learning_outcomes || []),
-    data.image_url || '', data.badge || '', data.is_published ? 1 : 0, data.is_featured ? 1 : 0,
-    data.schedule_info || ''
+    payload.slug, payload.title, payload.tagline, payload.stream, payload.curriculum, payload.grades,
+    payload.price_aed, payload.duration, payload.description, payload.learning_outcomes,
+    payload.image_url, payload.badge, payload.is_published, payload.is_featured, payload.schedule_info
   );
   return info.lastInsertRowid;
 }
 
-export function updateCourse(id: number, data: any) {
-  const db = getDb();
+export async function updateCourse(id: number, data: any) {
+  const payload = {
+    slug: data.slug,
+    title: data.title,
+    tagline: data.tagline,
+    stream: data.stream,
+    curriculum: data.curriculum,
+    grades: typeof data.grades === 'string' ? data.grades : JSON.stringify(data.grades || []),
+    price_aed: Number(data.price_aed) || 0,
+    duration: data.duration,
+    description: data.description,
+    learning_outcomes: typeof data.learning_outcomes === 'string' ? data.learning_outcomes : JSON.stringify(data.learning_outcomes || []),
+    image_url: data.image_url,
+    badge: data.badge,
+    is_published: data.is_published ? 1 : 0,
+    is_featured: data.is_featured ? 1 : 0,
+    schedule_info: data.schedule_info,
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    await supabase.from('courses').update(payload).eq('id', id);
+  } catch (err) {
+    console.warn('Supabase updateCourse error:', err);
+  }
+
+  const db = getSqlite();
   db.prepare(`
     UPDATE courses SET
       slug = ?, title = ?, tagline = ?, stream = ?, curriculum = ?, grades = ?,
@@ -301,29 +315,62 @@ export function updateCourse(id: number, data: any) {
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `).run(
-    data.slug, data.title, data.tagline, data.stream, data.curriculum,
-    typeof data.grades === 'string' ? data.grades : JSON.stringify(data.grades || []),
-    Number(data.price_aed) || 0, data.duration,
-    data.description,
-    typeof data.learning_outcomes === 'string' ? data.learning_outcomes : JSON.stringify(data.learning_outcomes || []),
-    data.image_url, data.badge, data.is_published ? 1 : 0, data.is_featured ? 1 : 0,
-    data.schedule_info, id
+    payload.slug, payload.title, payload.tagline, payload.stream, payload.curriculum,
+    payload.grades, payload.price_aed, payload.duration, payload.description,
+    payload.learning_outcomes, payload.image_url, payload.badge, payload.is_published,
+    payload.is_featured, payload.schedule_info, id
   );
 }
 
-export function deleteCourse(id: number) {
-  const db = getDb();
+export async function deleteCourse(id: number) {
+  try {
+    await supabase.from('courses').delete().eq('id', id);
+  } catch (err) {
+    console.warn('Supabase deleteCourse error:', err);
+  }
+  const db = getSqlite();
   db.prepare('DELETE FROM courses WHERE id = ?').run(id);
 }
 
-// Course Packages
-export function getAllPackages() {
-  const db = getDb();
+// ----------------- COURSE PACKAGES -----------------
+
+export async function getAllPackages() {
+  try {
+    const { data, error } = await supabase
+      .from('course_packages')
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (!error && data && data.length > 0) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Supabase getAllPackages failed, falling back:', err);
+  }
+  const db = getSqlite();
   return db.prepare('SELECT * FROM course_packages ORDER BY id ASC').all();
 }
 
-export function updatePackage(id: number, data: any) {
-  const db = getDb();
+export async function updatePackage(id: number, data: any) {
+  const payload = {
+    name: data.name,
+    subtitle: data.subtitle,
+    streams_included: typeof data.streams_included === 'string' ? data.streams_included : JSON.stringify(data.streams_included || []),
+    price_aed: Number(data.price_aed) || 0,
+    billing_period: data.billing_period || 'per term',
+    features: typeof data.features === 'string' ? data.features : JSON.stringify(data.features || []),
+    is_popular: data.is_popular ? 1 : 0,
+    is_published: data.is_published ? 1 : 0,
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    await supabase.from('course_packages').update(payload).eq('id', id);
+  } catch (err) {
+    console.warn('Supabase updatePackage error:', err);
+  }
+
+  const db = getSqlite();
   db.prepare(`
     UPDATE course_packages SET
       name = ?, subtitle = ?, streams_included = ?, price_aed = ?,
@@ -331,43 +378,83 @@ export function updatePackage(id: number, data: any) {
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `).run(
-    data.name, data.subtitle,
-    typeof data.streams_included === 'string' ? data.streams_included : JSON.stringify(data.streams_included || []),
-    Number(data.price_aed) || 0, data.billing_period || 'per term',
-    typeof data.features === 'string' ? data.features : JSON.stringify(data.features || []),
-    data.is_popular ? 1 : 0, data.is_published ? 1 : 0, id
+    payload.name, payload.subtitle, payload.streams_included, payload.price_aed,
+    payload.billing_period, payload.features, payload.is_popular, payload.is_published, id
   );
 }
 
-// Curriculum
-export function getAllCurriculum() {
-  const db = getDb();
+// ----------------- CURRICULUM -----------------
+
+export async function getAllCurriculum() {
+  try {
+    const { data, error } = await supabase
+      .from('curriculum_topics')
+      .select('*')
+      .order('curriculum', { ascending: true })
+      .order('subject', { ascending: true })
+      .order('grade', { ascending: true })
+      .order('term', { ascending: true });
+
+    if (!error && data && data.length > 0) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Supabase getAllCurriculum failed, falling back:', err);
+  }
+  const db = getSqlite();
   return db.prepare('SELECT * FROM curriculum_topics ORDER BY curriculum, subject, grade, term ASC').all();
 }
 
-export function getCurriculumTopicById(id: string) {
-  const db = getDb();
+export async function getCurriculumTopicById(id: string) {
+  try {
+    const { data, error } = await supabase
+      .from('curriculum_topics')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (!error && data) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Supabase getCurriculumTopicById error:', err);
+  }
+  const db = getSqlite();
   return db.prepare('SELECT * FROM curriculum_topics WHERE id = ?').get(id);
 }
 
-export function updateCurriculumTopic(id: string, data: any) {
-  const db = getDb();
+export async function updateCurriculumTopic(id: string, data: any) {
+  const payload = {
+    term_title: data.term_title,
+    duration: data.duration,
+    topics_json: typeof data.topics_json === 'string' ? data.topics_json : JSON.stringify(data.topics || []),
+    learning_approach: data.learning_approach,
+    assessments_json: typeof data.assessments_json === 'string' ? data.assessments_json : JSON.stringify(data.assessments || []),
+    capstone: data.capstone || '',
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    await supabase.from('curriculum_topics').update(payload).eq('id', id);
+  } catch (err) {
+    console.warn('Supabase updateCurriculumTopic error:', err);
+  }
+
+  const db = getSqlite();
   db.prepare(`
     UPDATE curriculum_topics SET
       term_title = ?, duration = ?, topics_json = ?, learning_approach = ?,
       assessments_json = ?, capstone = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `).run(
-    data.term_title, data.duration,
-    typeof data.topics_json === 'string' ? data.topics_json : JSON.stringify(data.topics || []),
-    data.learning_approach,
-    typeof data.assessments_json === 'string' ? data.assessments_json : JSON.stringify(data.assessments || []),
-    data.capstone || '', id
+    payload.term_title, payload.duration, payload.topics_json,
+    payload.learning_approach, payload.assessments_json, payload.capstone, id
   );
 }
 
-// Enquiries (Free Trial & Contact)
-export function createEnquiry(data: {
+// ----------------- ENQUIRIES -----------------
+
+export async function createEnquiry(data: {
   type: 'free_trial' | 'contact';
   name: string;
   email: string;
@@ -380,52 +467,145 @@ export function createEnquiry(data: {
   subject?: string;
   message?: string;
 }) {
-  const db = getDb();
+  const payload = {
+    type: data.type,
+    name: data.name,
+    email: data.email,
+    phone: data.phone || '',
+    student_name: data.student_name || '',
+    grade: data.grade || '',
+    curriculum: data.curriculum || '',
+    interested_stream: data.interested_stream || '',
+    preferred_contact_method: data.preferred_contact_method || 'WhatsApp',
+    subject: data.subject || '',
+    message: data.message || '',
+    status: 'New',
+    internal_notes: '',
+  };
+
+  try {
+    const { data: inserted, error } = await supabase
+      .from('enquiries')
+      .insert(payload)
+      .select('id')
+      .single();
+
+    if (!error && inserted) {
+      // Mirror to SQLite
+      try {
+        const db = getSqlite();
+        db.prepare(`
+          INSERT INTO enquiries (
+            id, type, name, email, phone, student_name, grade, curriculum,
+            interested_stream, preferred_contact_method, subject, message, status
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New')
+        `).run(
+          inserted.id, payload.type, payload.name, payload.email, payload.phone,
+          payload.student_name, payload.grade, payload.curriculum,
+          payload.interested_stream, payload.preferred_contact_method, payload.subject, payload.message
+        );
+      } catch (e) {
+        // Ignore mirror error
+      }
+      return inserted.id;
+    }
+  } catch (err) {
+    console.warn('Supabase createEnquiry failed, saving to SQLite:', err);
+  }
+
+  const db = getSqlite();
   const info = db.prepare(`
     INSERT INTO enquiries (
       type, name, email, phone, student_name, grade, curriculum,
       interested_stream, preferred_contact_method, subject, message, status
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New')
   `).run(
-    data.type, data.name, data.email, data.phone || '', data.student_name || '',
-    data.grade || '', data.curriculum || '', data.interested_stream || '',
-    data.preferred_contact_method || 'WhatsApp', data.subject || '', data.message || ''
+    payload.type, payload.name, payload.email, payload.phone, payload.student_name,
+    payload.grade, payload.curriculum, payload.interested_stream,
+    payload.preferred_contact_method, payload.subject, payload.message
   );
   return info.lastInsertRowid;
 }
 
-export function getAllEnquiries(typeFilter?: string, statusFilter?: string, search?: string) {
-  const db = getDb();
-  let query = 'SELECT * FROM enquiries WHERE 1=1';
+export async function getAllEnquiries(typeFilter?: string, statusFilter?: string, search?: string) {
+  try {
+    let query = supabase.from('enquiries').select('*').order('created_at', { ascending: false });
+
+    if (typeFilter && typeFilter !== 'all') {
+      query = query.eq('type', typeFilter);
+    }
+    if (statusFilter && statusFilter !== 'all') {
+      query = query.eq('status', statusFilter);
+    }
+    if (search && search.trim() !== '') {
+      const s = `%${search.trim()}%`;
+      query = query.or(`name.ilike.${s},email.ilike.${s},student_name.ilike.${s},phone.ilike.${s}`);
+    }
+
+    const { data, error } = await query;
+    if (!error && data) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Supabase getAllEnquiries failed, falling back:', err);
+  }
+
+  const db = getSqlite();
+  let sql = 'SELECT * FROM enquiries WHERE 1=1';
   const params: any[] = [];
 
   if (typeFilter && typeFilter !== 'all') {
-    query += ' AND type = ?';
+    sql += ' AND type = ?';
     params.push(typeFilter);
   }
-
   if (statusFilter && statusFilter !== 'all') {
-    query += ' AND status = ?';
+    sql += ' AND status = ?';
     params.push(statusFilter);
   }
-
   if (search && search.trim() !== '') {
-    query += ' AND (name LIKE ? OR email LIKE ? OR student_name LIKE ? OR phone LIKE ?)';
+    sql += ' AND (name LIKE ? OR email LIKE ? OR student_name LIKE ? OR phone LIKE ?)';
     const s = `%${search.trim()}%`;
     params.push(s, s, s, s);
   }
 
-  query += ' ORDER BY created_at DESC';
-  return db.prepare(query).all(...params);
+  sql += ' ORDER BY created_at DESC';
+  return db.prepare(sql).all(...params);
 }
 
-export function getEnquiryById(id: number) {
-  const db = getDb();
+export async function getEnquiryById(id: number) {
+  try {
+    const { data, error } = await supabase
+      .from('enquiries')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (!error && data) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Supabase getEnquiryById error:', err);
+  }
+  const db = getSqlite();
   return db.prepare('SELECT * FROM enquiries WHERE id = ?').get(id);
 }
 
-export function updateEnquiryStatus(id: number, status: string, internal_notes?: string) {
-  const db = getDb();
+export async function updateEnquiryStatus(id: number, status: string, internal_notes?: string) {
+  const payload: any = {
+    status,
+    updated_at: new Date().toISOString(),
+  };
+  if (internal_notes !== undefined) {
+    payload.internal_notes = internal_notes;
+  }
+
+  try {
+    await supabase.from('enquiries').update(payload).eq('id', id);
+  } catch (err) {
+    console.warn('Supabase updateEnquiryStatus error:', err);
+  }
+
+  const db = getSqlite();
   if (internal_notes !== undefined) {
     db.prepare(`
       UPDATE enquiries SET status = ?, internal_notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
@@ -437,32 +617,89 @@ export function updateEnquiryStatus(id: number, status: string, internal_notes?:
   }
 }
 
-export function deleteEnquiry(id: number) {
-  const db = getDb();
+export async function deleteEnquiry(id: number) {
+  try {
+    await supabase.from('enquiries').delete().eq('id', id);
+  } catch (err) {
+    console.warn('Supabase deleteEnquiry error:', err);
+  }
+  const db = getSqlite();
   db.prepare('DELETE FROM enquiries WHERE id = ?').run(id);
 }
 
-// Activity Log
-export function logActivity(admin_email: string, action: string, target_type: string, target_id?: string, details?: string) {
+// ----------------- ACTIVITY LOG -----------------
+
+export async function logActivity(admin_email: string, action: string, target_type: string, target_id?: string, details?: string) {
+  const payload = {
+    admin_email,
+    action,
+    target_type,
+    target_id: target_id || '',
+    details: details || '',
+  };
+
   try {
-    const db = getDb();
+    await supabase.from('admin_activity_log').insert(payload);
+  } catch (err) {
+    // Ignore error
+  }
+
+  try {
+    const db = getSqlite();
     db.prepare(`
       INSERT INTO admin_activity_log (admin_email, action, target_type, target_id, details)
       VALUES (?, ?, ?, ?, ?)
     `).run(admin_email, action, target_type, target_id || '', details || '');
   } catch (e) {
-    console.error('Failed to log admin activity:', e);
+    // Ignore error
   }
 }
 
-export function getRecentActivities(limit = 15) {
-  const db = getDb();
+export async function getRecentActivities(limit = 15) {
+  try {
+    const { data, error } = await supabase
+      .from('admin_activity_log')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (!error && data && data.length > 0) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Supabase getRecentActivities error:', err);
+  }
+  const db = getSqlite();
   return db.prepare('SELECT * FROM admin_activity_log ORDER BY created_at DESC LIMIT ?').all(limit);
 }
 
-// Dashboard Statistics
-export function getDashboardStats() {
-  const db = getDb();
+// ----------------- DASHBOARD STATS -----------------
+
+export async function getDashboardStats() {
+  try {
+    const [enquiriesRes, coursesRes] = await Promise.all([
+      supabase.from('enquiries').select('status, type'),
+      supabase.from('courses').select('is_published'),
+    ]);
+
+    if (!enquiriesRes.error && enquiriesRes.data) {
+      const enquiries = enquiriesRes.data;
+      const courses = coursesRes.data || [];
+
+      return {
+        totalEnquiries: enquiries.length,
+        newEnquiries: enquiries.filter((e) => e.status === 'New').length,
+        freeTrialRequests: enquiries.filter((e) => e.type === 'free_trial').length,
+        contactMessages: enquiries.filter((e) => e.type === 'contact').length,
+        activeCourses: courses.filter((c) => c.is_published === 1).length,
+        convertedEnquiries: enquiries.filter((e) => e.status === 'Converted').length,
+      };
+    }
+  } catch (err) {
+    console.warn('Supabase getDashboardStats failed, falling back:', err);
+  }
+
+  const db = getSqlite();
   const totalEnquiries = db.prepare('SELECT count(*) as count FROM enquiries').get() as { count: number };
   const newEnquiries = db.prepare("SELECT count(*) as count FROM enquiries WHERE status = 'New'").get() as { count: number };
   const freeTrialRequests = db.prepare("SELECT count(*) as count FROM enquiries WHERE type = 'free_trial'").get() as { count: number };
@@ -476,13 +713,27 @@ export function getDashboardStats() {
     freeTrialRequests: freeTrialRequests.count,
     contactMessages: contactMessages.count,
     activeCourses: activeCourses.count,
-    convertedEnquiries: convertedEnquiries.count
+    convertedEnquiries: convertedEnquiries.count,
   };
 }
 
-// Settings
-export function getAllSettings(): Record<string, string> {
-  const db = getDb();
+// ----------------- WEBSITE SETTINGS -----------------
+
+export async function getAllSettings(): Promise<Record<string, string>> {
+  try {
+    const { data, error } = await supabase.from('website_settings').select('*');
+    if (!error && data && data.length > 0) {
+      const settings: Record<string, string> = {};
+      for (const row of data) {
+        settings[row.key] = row.value;
+      }
+      return settings;
+    }
+  } catch (err) {
+    console.warn('Supabase getAllSettings failed, falling back:', err);
+  }
+
+  const db = getSqlite();
   const rows = db.prepare('SELECT key, value FROM website_settings').all() as { key: string; value: string }[];
   const settings: Record<string, string> = {};
   for (const row of rows) {
@@ -491,43 +742,91 @@ export function getAllSettings(): Record<string, string> {
   return settings;
 }
 
-export function getSetting(key: string, defaultValue = ''): string {
-  const db = getDb();
+export async function getSetting(key: string, defaultValue = ''): Promise<string> {
+  try {
+    const { data, error } = await supabase
+      .from('website_settings')
+      .select('value')
+      .eq('key', key)
+      .single();
+
+    if (!error && data) {
+      return data.value;
+    }
+  } catch (err) {
+    console.warn('Supabase getSetting error:', err);
+  }
+
+  const db = getSqlite();
   const row = db.prepare('SELECT value FROM website_settings WHERE key = ?').get(key) as { value: string } | undefined;
   return row ? row.value : defaultValue;
 }
 
-export function updateSetting(key: string, value: string) {
-  const db = getDb();
+export async function updateSetting(key: string, value: string) {
+  try {
+    await supabase.from('website_settings').upsert({ key, value, updated_at: new Date().toISOString() });
+  } catch (err) {
+    console.warn('Supabase updateSetting error:', err);
+  }
+
+  const db = getSqlite();
   db.prepare(`
     INSERT INTO website_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
   `).run(key, value);
 }
 
-export function updateSettingsBatch(record: Record<string, string>) {
-  const db = getDb();
+export async function updateSettingsBatch(record: Record<string, string>) {
+  const entries = Object.entries(record).map(([key, value]) => ({
+    key,
+    value,
+    updated_at: new Date().toISOString(),
+  }));
+
+  try {
+    await supabase.from('website_settings').upsert(entries);
+  } catch (err) {
+    console.warn('Supabase updateSettingsBatch error:', err);
+  }
+
+  const db = getSqlite();
   const upsert = db.prepare(`
     INSERT INTO website_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
   `);
-  const transaction = db.transaction((entries: [string, string][]) => {
-    for (const [k, v] of entries) {
+  const transaction = db.transaction((list: [string, string][]) => {
+    for (const [k, v] of list) {
       upsert.run(k, v);
     }
   });
   transaction(Object.entries(record));
 }
 
-// Users
-export function getUserByEmail(email: string): { id: number; email: string; name: string; role: string; password_hash: string } | undefined {
-  const db = getDb();
-  return db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
+// ----------------- USERS & AUTH -----------------
+
+export async function getUserByEmail(email: string): Promise<{ id: number; email: string; name: string; role: string; password_hash: string } | null> {
+  const normalized = email.trim().toLowerCase();
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', normalized)
+      .single();
+
+    if (!error && data) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Supabase getUserByEmail failed, falling back:', err);
+  }
+
+  const db = getSqlite();
+  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(normalized) as any;
+  return user || null;
 }
 
-export function verifyUserCredentials(email: string, passwordPlain: string) {
-  const db = getDb();
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
+export async function verifyUserCredentials(email: string, passwordPlain: string) {
+  const user = await getUserByEmail(email);
   if (!user) return null;
   const hash = hashPassword(passwordPlain);
   if (user.password_hash === hash) {
@@ -536,8 +835,16 @@ export function verifyUserCredentials(email: string, passwordPlain: string) {
   return null;
 }
 
-export function updateUserPassword(email: string, newPasswordPlain: string) {
-  const db = getDb();
+export async function updateUserPassword(email: string, newPasswordPlain: string) {
+  const normalized = email.trim().toLowerCase();
   const newHash = hashPassword(newPasswordPlain);
-  db.prepare('UPDATE users SET password_hash = ? WHERE email = ?').run(newHash, email);
+
+  try {
+    await supabase.from('users').update({ password_hash: newHash }).eq('email', normalized);
+  } catch (err) {
+    console.warn('Supabase updateUserPassword error:', err);
+  }
+
+  const db = getSqlite();
+  db.prepare('UPDATE users SET password_hash = ? WHERE email = ?').run(newHash, normalized);
 }

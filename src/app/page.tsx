@@ -13,9 +13,9 @@ import { getAllSettings, getAllPackages } from '@/lib/db';
 
 export const revalidate = 60; // Cache at edge CDN for sub-50ms instant load; revalidates every 60s in background!
 
-export default function HomePage() {
-  const settings = getAllSettings();
-  const packages = getAllPackages();
+export default async function HomePage() {
+  const settings = await getAllSettings();
+  const packages = await getAllPackages();
 
   const announcementText = settings['announcement_text'] || '🚀 Spring Term Enrolment Open! Book your free 1-on-1 trial class today.';
   const isAnnouncementActive = settings['announcement_banner_active'] !== 'false';

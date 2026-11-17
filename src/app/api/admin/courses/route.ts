@@ -7,7 +7,7 @@ export async function GET() {
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const courses = getAllCourses();
+  const courses = await getAllCourses();
   return NextResponse.json({ courses });
 }
 
@@ -27,8 +27,8 @@ export async function POST(request: Request) {
       data.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     }
 
-    const newId = createCourse(data);
-    logActivity(session.email, 'CREATE_COURSE', 'course', String(newId), `Created course: ${data.title}`);
+    const newId = await createCourse(data);
+    await logActivity(session.email, 'CREATE_COURSE', 'course', String(newId), `Created course: ${data.title}`);
 
     return NextResponse.json({ success: true, id: newId, message: 'Course created successfully.' });
   } catch (err: any) {
